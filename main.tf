@@ -117,7 +117,7 @@ resource aws_lambda_function autoscale_handling {
   environment {
     variables = {
       DOMAIN  = "${var.domain}"
-      ZONE_ID = var.internal_zone_id
+      ZONE_ID = var.autoscale_route53zone_id
     }
   }
 
