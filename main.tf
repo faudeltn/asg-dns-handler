@@ -2,6 +2,27 @@ resource "aws_sns_topic" "autoscale_handling" {
   name = "${var.autoscale_handler_unique_identifier}"
 }
 
+resource "aws_iam_role" "autoscale_handling" {
+  name = "${var.autoscale_handler_unique_identifier}"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+
+}
+
 resource "aws_iam_role_policy" "autoscale_handling" {
   name = "${var.autoscale_handler_unique_identifier}"
   role = aws_iam_role.autoscale_handling.name
@@ -45,27 +66,6 @@ EOF
 
 }
 
-resource "aws_iam_role" "autoscale_handling" {
-  name = "${var.autoscale_handler_unique_identifier}"
-
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-}
-EOF
-
-}
-
 resource "aws_iam_role" "lifecycle" {
   name               = "${var.autoscale_handler_unique_identifier}-lifecycle"
   assume_role_policy = data.aws_iam_policy_document.lifecycle.json
@@ -97,13 +97,13 @@ data "aws_iam_policy_document" "lifecycle_policy" {
   }
 }
 
-data archive_file autoscale {
+data archive_file "autoscale" {
   type        = "zip"
   source_file = "${path.module}/lambda/autoscale/autoscale.py"
   output_path = "${path.module}/lambda/dist/autoscale.zip"
 }
 
-resource aws_lambda_function autoscale_handling {
+resource aws_lambda_function "autoscale_handling" {
   depends_on = [aws_sns_topic.autoscale_handling]
 
   filename         = data.archive_file.autoscale.output_path
@@ -117,15 +117,11 @@ resource aws_lambda_function autoscale_handling {
   environment {
     variables = {
       DOMAIN  = "${var.domain}"
-      ZONE_ID = var.autoscale_route53zone_id
+      ZONE_ID = var.internal_zone_id
     }
   }
 
-#   tags = {
-#     Terraform   = "true"
-#     Environment = var.env_name
-#     Customer    = var.cust
-#   }
+tags        = merge({ "Name" = var.name }, var.tags)
 }
 
 resource "aws_lambda_permission" "autoscale_handling" {
