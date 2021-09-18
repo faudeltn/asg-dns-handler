@@ -11,8 +11,6 @@ module "example" {
     tags = {
         Customer             = "YALLALABS"
         Terraform            = "true"
-        # Name                 = "Prova"
-        @ Environment          = upper(local.env_name[terraform.workspace])
         Environment          = "DEV"
     }
 }
